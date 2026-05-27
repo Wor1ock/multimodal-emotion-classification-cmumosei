@@ -8,30 +8,91 @@ import torch
 from omegaconf import DictConfig
 from sklearn.preprocessing import StandardScaler
 
-from src.preprocessing import FEATURE_KEYS
-from src.preprocessing.audio import *
-from src.preprocessing.sample_id import make_sample_id
-from src.preprocessing.text import *
-from src.utils import set_seed
+from src.preprocessing.audio import (
+    extract_logmel_features,
+    extract_mfcc_features,
+    load_and_clean_audio,
+)
+from src.preprocessing.text import (
+    clean_texts,
+    extract_fasttext_features,
+    extract_tfidf_features,
+)
+from src.utils import make_sample_id, set_seed
 
 
 def _resolve_csv_path(cfg: DictConfig) -> Path:
-    if cfg.preprocess.split == "train":
-        return Path(cfg.data.train_csv_path)
-    if cfg.preprocess.split == "test":
-        return Path(cfg.data.test_csv_path)
-    if cfg.preprocess.split == "val":
-        return Path(cfg.data.val_csv_path)
-    raise ValueError(f"Unknown split: {cfg.preprocess.split}")
+    paths = {
+        "train": cfg.data.train_csv_path,
+        "test": cfg.data.test_csv_path,
+        "val": cfg.data.val_csv_path,
+    }
+    split = cfg.preprocess.split
+    if split not in paths:
+        raise ValueError(f"Unknown split: {split}")
+    return Path(paths[split])
 
 
-def _resolve_audio_path(audio_dir: Path, row: pd.Series) -> Path:
-    return audio_dir / f"{str(row['video'])}.wav"
+def _extract_single_audio_features(
+    row: pd.Series, sample_id: str, audio_dir: Path, cfg: DictConfig
+) -> dict:
+    audio_path = audio_dir / f"{str(row['video'])}.wav"
+    res = {"sample_id": sample_id, "audio_mfcc": None, "audio_logmel": None}
+
+    if not audio_path.exists():
+        return res
+
+    waveform, sr = load_and_clean_audio(
+        audio_path, row, **cfg.preprocess.audio_core)
+    if waveform is None:
+        return res
+
+    active_features = cfg.preprocess.features_to_process
+    if "audio_mfcc" in active_features:
+        res["audio_mfcc"] = extract_mfcc_features(
+            waveform, sr, **cfg.preprocess.mfcc)
+    if "audio_logmel" in active_features:
+        res["audio_logmel"] = extract_logmel_features(
+            waveform, sr, **cfg.preprocess.logmel)
+
+    return res
 
 
-def _save_tensor(path: Path, tensor: torch.Tensor) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(tensor, path)
+def _scale_and_save_audio_features(
+    raw_results: list, feat_key: str, split: str, model_dir: Path, output_dir: Path
+) -> None:
+    valid_data = [r for r in raw_results if r[feat_key] is not None]
+    if not valid_data:
+        return
+
+    features = [r[feat_key] for r in valid_data]
+    sample_ids = [r["sample_id"] for r in valid_data]
+
+    is_3d = len(features[0].shape) == 2
+    flat_features = np.concatenate(
+        features, axis=0) if is_3d else np.vstack(features)
+
+    scaler_path = model_dir / f"{feat_key}_scaler.pkl"
+    scaler = StandardScaler()
+
+    if split == "train":
+        scaler.fit(flat_features)
+        joblib.dump(scaler, scaler_path)
+    else:
+        if not scaler_path.exists():
+            raise FileNotFoundError(f"Scaler not found at {scaler_path}")
+        scaler = joblib.load(scaler_path)
+
+    save_dir = output_dir / feat_key
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    for sid, feat in zip(sample_ids, features):
+        if is_3d:
+            T, F = feat.shape
+            scaled = scaler.transform(feat).reshape(T, F)
+        else:
+            scaled = scaler.transform(feat.reshape(1, -1)).squeeze(0)
+        torch.save(torch.from_numpy(scaled), save_dir / f"{sid}.pt")
 
 
 @hydra.main(version_base=None, config_path=".", config_name="config")
@@ -40,111 +101,63 @@ def preprocess(cfg: DictConfig) -> None:
 
     csv_path = hydra.utils.to_absolute_path(str(_resolve_csv_path(cfg)))
     audio_dir = Path(hydra.utils.to_absolute_path(cfg.preprocess.audio_dir))
-    base_out = hydra.utils.to_absolute_path(cfg.preprocess.output_dir)
-    output_dir = Path(base_out) / cfg.preprocess.split
+    output_dir = Path(hydra.utils.to_absolute_path(
+        cfg.preprocess.output_dir)) / cfg.preprocess.split
     model_dir = Path(hydra.utils.to_absolute_path(cfg.preprocess.model_dir))
     model_dir.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_csv(csv_path)
-    sample_ids = [make_sample_id(row) for _, row in df.iterrows()]
-    raw_texts = df["text"].astype(str).tolist()
+    df["sample_id"] = [make_sample_id(row) for _, row in df.iterrows()]
 
-    print("Extracting text features...")
-    cleaned_texts = clean_texts(raw_texts)
+    active_features = cfg.preprocess.features_to_process
 
-    if "text_bow" in FEATURE_KEYS:
-        text_bows = extract_tfidf_features(
-            cleaned_texts=cleaned_texts,
-            split=cfg.preprocess.split,
-            model_dir=str(model_dir),
-            **cfg.preprocess.tfidf
-        )
-        joblib.Parallel(n_jobs=-1, backend="threading")(
-            joblib.delayed(_save_tensor)(
-                output_dir / "text_bow" / f"{sid}.pt", tensor)
-            for sid, tensor in zip(sample_ids, text_bows)
-        )
+    if "text_bow" in active_features or "text_embed" in active_features:
+        print("Processing text data...")
+        cleaned_texts = clean_texts(df["text"].astype(str).tolist())
 
-    if "text_embed" in FEATURE_KEYS:
-        text_embeds = extract_fasttext_features(
-            cleaned_texts=cleaned_texts,
-            split=cfg.preprocess.split,
-            model_dir=str(model_dir),
-            **cfg.preprocess.fasttext
-        )
-        joblib.Parallel(n_jobs=-1, backend="threading")(
-            joblib.delayed(_save_tensor)(
-                output_dir / "text_embed" / f"{sid}.pt", tensor)
-            for sid, tensor in zip(sample_ids, text_embeds)
-        )
+        if "text_bow" in active_features:
+            print("Extracting TF-IDF features...")
+            tfidf_gen = extract_tfidf_features(
+                cleaned_texts=cleaned_texts,
+                split=cfg.preprocess.split,
+                model_dir=str(model_dir),
+                **cfg.preprocess.tfidf,
+            )
+            save_dir = output_dir / "text_bow"
+            save_dir.mkdir(parents=True, exist_ok=True)
+            for sid, tensor in zip(df["sample_id"], tfidf_gen):
+                torch.save(tensor, save_dir / f"{sid}.pt")
 
-    print("Extracting audio features...")
-    mfcc_list = []
-    mel_list = []
-    audio_sample_ids = []
+        if "text_embed" in active_features:
+            print("Extracting FastText features...")
+            ft_gen = extract_fasttext_features(
+                cleaned_texts=cleaned_texts,
+                split=cfg.preprocess.split,
+                model_dir=str(model_dir),
+                **cfg.preprocess.fasttext,
+            )
+            save_dir = output_dir / "text_embed"
+            save_dir.mkdir(parents=True, exist_ok=True)
+            for sid, tensor in zip(df["sample_id"], ft_gen):
+                torch.save(tensor, save_dir / f"{sid}.pt")
 
-    for sample_id, (_, row) in zip(sample_ids, df.iterrows()):
-        audio_path = _resolve_audio_path(audio_dir, row)
-
-        if not audio_path.exists():
-            print(f"Warning: File missing {audio_path}")
-            continue
-
-        waveform, sr = load_and_clean_audio(
-            audio_path, row, **cfg.preprocess.audio_core)
-        if waveform is None:
-            continue
-
-        audio_sample_ids.append(sample_id)
-
-        if "audio_mfcc" in FEATURE_KEYS:
-            mfcc = extract_mfcc_features(waveform, sr, **cfg.preprocess.mfcc)
-            mfcc_list.append(mfcc)
-
-        if "audio_logmel" in FEATURE_KEYS:
-            logmel = extract_logmel_features(
-                waveform, sr, **cfg.preprocess.logmel)
-            mel_list.append(logmel)
-
-    if "audio_mfcc" in FEATURE_KEYS and mfcc_list:
-        mfcc_matrix = np.stack(mfcc_list)
-        scaler_path = model_dir / "mfcc_scaler.pkl"
-
-        if cfg.preprocess.split == "train":
-            scaler = StandardScaler()
-            mfcc_scaled = scaler.fit_transform(mfcc_matrix)
-            joblib.dump(scaler, scaler_path)
-        else:
-            if not scaler_path.exists():
-                raise FileNotFoundError(f"Scaler not found at {scaler_path}")
-            scaler = joblib.load(scaler_path)
-            mfcc_scaled = scaler.transform(mfcc_matrix)
-
-        joblib.Parallel(n_jobs=-1, backend="threading")(
-            joblib.delayed(_save_tensor)(
-                output_dir / "audio_mfcc" / f"{sid}.pt", torch.from_numpy(arr))
-            for sid, arr in zip(audio_sample_ids, mfcc_scaled)
+    if "audio_mfcc" in active_features or "audio_logmel" in active_features:
+        print("Extracting audio features in parallel...")
+        raw_audio_results = joblib.Parallel(n_jobs=-1, backend="loky")(
+            joblib.delayed(_extract_single_audio_features)(
+                row, row["sample_id"], audio_dir, cfg)
+            for _, row in df.iterrows()
         )
 
-    if "audio_logmel" in FEATURE_KEYS and mel_list:
-        mel_matrix = np.stack(mel_list)
-        scaler_path = model_dir / "mel_scaler.pkl"
+        if "audio_mfcc" in active_features:
+            print("Scaling and saving MFCC features...")
+            _scale_and_save_audio_features(
+                raw_audio_results, "audio_mfcc", cfg.preprocess.split, model_dir, output_dir)
 
-        if cfg.preprocess.split == "train":
-            scaler = StandardScaler()
-            mel_scaled = scaler.fit_transform(mel_matrix)
-            joblib.dump(scaler, scaler_path)
-        else:
-            if not scaler_path.exists():
-                raise FileNotFoundError(f"Scaler not found at {scaler_path}")
-            scaler = joblib.load(scaler_path)
-            mel_scaled = scaler.transform(mel_matrix)
-
-        joblib.Parallel(n_jobs=-1, backend="threading")(
-            joblib.delayed(_save_tensor)(
-                output_dir / "audio_logmel" / f"{sid}.pt", torch.from_numpy(arr))
-            for sid, arr in zip(audio_sample_ids, mel_scaled)
-        )
+        if "audio_logmel" in active_features:
+            print("Scaling and saving LogMel features...")
+            _scale_and_save_audio_features(
+                raw_audio_results, "audio_logmel", cfg.preprocess.split, model_dir, output_dir)
 
 
 if __name__ == "__main__":

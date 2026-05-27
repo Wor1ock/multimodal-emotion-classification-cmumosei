@@ -1,4 +1,5 @@
 import os
+import hashlib
 
 import lightning as L
 import matplotlib.pyplot as plt
@@ -16,6 +17,13 @@ def set_seed(seed: int = 42) -> None:
     if torch.cuda.is_available():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+
+def make_sample_id(row: pd.Series) -> str:
+    if "id" in row.index and pd.notna(row["id"]):
+        return str(row["id"])
+    payload = f"{row['video']}|{row['text']}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 def plot_metrics_from_log(log_path: str) -> None:

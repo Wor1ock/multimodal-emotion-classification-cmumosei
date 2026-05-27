@@ -36,8 +36,15 @@ logger:
 
 preprocess:
   split: train
+  model_dir: models/
   output_dir: data/features_cache
   audio_dir: data/audio
+
+  features_to_process:
+    - text_bow
+    - text_embed
+    - audio_mfcc
+    - audio_logmel
 
   tfidf:
     max_features: 1000

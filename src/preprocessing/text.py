@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List
+from typing import Generator, List
 
 import fasttext
 import joblib
@@ -10,14 +10,7 @@ import torch
 from num2words import num2words
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from src.preprocessing.utils_text import (
-    RE_MIXED,
-    RE_NUMBER,
-    RE_SUFFIX,
-    custom_exceptions,
-    nlp,
-    stop_words,
-)
+from src.preprocessing.utils_text import *
 
 
 def text2num(match: re.Match) -> str:
@@ -50,8 +43,8 @@ def pre_regex_clean(text: str) -> str:
 
 def clean_texts(texts: List[str]) -> List[List[str]]:
     cleaned_regex = [pre_regex_clean(t) for t in texts]
-
     cleaned_docs = []
+
     for doc in nlp.pipe(cleaned_regex, n_process=-1, batch_size=256):
         tokens = [
             t.lemma_.lower() for t in doc
@@ -70,7 +63,7 @@ def extract_tfidf_features(
     max_features: int,
     ngram_range: List[int],
     min_df: int
-) -> List[torch.Tensor]:
+) -> Generator[torch.Tensor, None, None]:
     text_strings = [" ".join(tokens) for tokens in cleaned_texts]
     vectorizer_path = Path(model_dir) / "tfidf_vectorizer.pkl"
     vectorizer_path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,16 +74,18 @@ def extract_tfidf_features(
             ngram_range=tuple(ngram_range),
             min_df=min_df
         )
-        tfidf_array = vectorizer.fit_transform(text_strings).toarray()
+        tfidf_matrix = vectorizer.fit_transform(text_strings)
         joblib.dump(vectorizer, vectorizer_path)
     else:
         if not vectorizer_path.exists():
             raise FileNotFoundError(
                 f"Vectorizer not found at {vectorizer_path}.")
         vectorizer = joblib.load(vectorizer_path)
-        tfidf_array = vectorizer.transform(text_strings).toarray()
+        tfidf_matrix = vectorizer.transform(text_strings)
 
-    return [torch.from_numpy(row.astype(np.float32)) for row in tfidf_array]
+    for i in range(tfidf_matrix.shape[0]):
+        row = tfidf_matrix[i].toarray().astype(np.float32).squeeze(0)
+        yield torch.from_numpy(row)
 
 
 def extract_fasttext_features(
@@ -101,7 +96,7 @@ def extract_fasttext_features(
     epoch: int,
     lr: float,
     dim: int
-) -> List[torch.Tensor]:
+) -> Generator[torch.Tensor, None, None]:
     model_dir_path = Path(model_dir)
     ft_model_path = model_dir_path / "fasttext_finetuned.bin"
     ft_model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +125,6 @@ def extract_fasttext_features(
                 f"FastText model not found at {ft_model_path}.")
         model = fasttext.load_model(str(ft_model_path))
 
-    features = []
     model_dim = model.get_dimension()
     for tokens in cleaned_texts:
         vectors = [model.get_word_vector(t) for t in tokens]
@@ -138,6 +132,4 @@ def extract_fasttext_features(
             avg_vector = np.zeros(model_dim, dtype=np.float32)
         else:
             avg_vector = np.mean(vectors, axis=0).astype(np.float32)
-        features.append(torch.from_numpy(avg_vector))
-
-    return features
+        yield torch.from_numpy(avg_vector)

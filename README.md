@@ -14,6 +14,7 @@ Baseline | Improved architecture
 
 ```bash
 uv sync
+uv run python -m nltk.downloader stopwords punkt_tab
 uv run pre-commit install
 ```
 
