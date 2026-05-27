@@ -1,0 +1,49 @@
+seed: 42
+
+data:
+  train_csv_path: data/train.csv
+  val_csv_path: data/val.csv
+  test_csv_path: data/test.csv
+  features_dir: data/features_cache/train
+  batch_size: 32
+  num_workers: 4
+  val_size: 0.2
+
+model:
+  _target_: src.models.baseline_mlp.MLPBaselineModel
+  num_classes: 6
+  learning_rate: 0.001
+  text_bow_dim: 300
+  text_embed_dim: 768
+  audio_mfcc_dim: 128
+  audio_logmel_dim: 256
+  hidden_dim: 256
+  dropout: 0.3
+  f1_average: micro
+
+trainer:
+  max_epochs: 50
+  patience: 5
+  gradient_accumulation_steps: 1
+  checkpoint_dir: models
+  log_dir: logs
+
+logger:
+  experiment_name: csv_logs
+  tensorboard_name: tb
+
+preprocess:
+  split: train
+  output_dir: data/features_cache
+  audio_dir: data/audio
+
+  tfidf:
+    max_features: 1000
+    ngram_range: [1, 2]
+    min_df: 3
+    
+  fasttext:
+    pretrained_path: "../models/fasttext/model.bin"
+    epoch: 5
+    lr: 0.025
+    dim: 300
