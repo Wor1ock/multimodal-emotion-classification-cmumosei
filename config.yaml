@@ -1,5 +1,7 @@
 seed: 42
 
+feature_keys: ["text_bow", "text_embed", "audio_mfcc", "audio_logmel"]
+
 data:
   train_csv_path: data/train.csv
   val_csv_path: data/val.csv
@@ -43,7 +45,17 @@ preprocess:
     min_df: 3
     
   fasttext:
-    pretrained_path: "../models/fasttext/model.bin"
+    pretrained_path: "" #"../models/fasttext/model.bin"
     epoch: 5
     lr: 0.025
     dim: 300
+
+  audio_core:
+    target_sr: 22050
+    res_type: "kaiser_fast"
+
+  mfcc:
+    n_mfcc: 20
+
+  logmel:
+    n_mels: 128
