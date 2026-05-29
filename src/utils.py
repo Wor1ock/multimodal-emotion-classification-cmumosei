@@ -1,5 +1,5 @@
-import os
 import hashlib
+import os
 
 import lightning as L
 import matplotlib.pyplot as plt
@@ -22,7 +22,13 @@ def set_seed(seed: int = 42) -> None:
 def make_sample_id(row: pd.Series) -> str:
     if "id" in row.index and pd.notna(row["id"]):
         return str(row["id"])
-    payload = f"{row['video']}|{row['text']}"
+
+    video = str(row["video"]).strip()
+    start = str(row["start_time"]).strip()
+    end = str(row["end_time"]).strip()
+
+    payload = f"{video}_{start}_{end}"
+
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 

@@ -5,7 +5,7 @@
 На текущей конфигурации получилось добиться таких метрик.
 Baseline | Improved architecture
 ---|---|
-0.86805 |0.88135 
+- | - 
 
 ## Порядок запуска
 
@@ -26,11 +26,11 @@ uv run pre-commit install
 Кэширование Log-Mel спектрограмм в `data/features_cache/` перед обучением или инференсом.
 
 ```bash
-# тренировочные признаки
-uv run python preprocess.py ++split=train
+# все признаки сразу
+uv run python preprocess.py --multirun preprocess.split=train,val,test preprocess.features_to_process=[text_bow,text_embed,audio_mfcc,audio_logmel]
 
-# тестовые признаки
-uv run python preprocess.py ++split=test
+# только train выборка с text_bow признаком
+uv run python preprocess.py preprocess.split=train preprocess.features_to_process=text_bow
 ```
 
 ### 4. Обучение модели
@@ -49,8 +49,7 @@ uv run python train.py
 # использовать последний чекпоинт
 uv run python predict.py
 
-# использовать конкретный чекпоинт
-uv run python predict.py ++prediction.checkpoint_path=models/best-epoch=05-val_f1=0.850.ckpt
+# конкретный чекпоинт можно настроить в configs/predict.toml
 ```
 
 ## Примечания

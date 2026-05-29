@@ -1,0 +1,30 @@
+defaults:
+  - base
+  - _self_
+
+preprocess:
+  split: train
+  model_dir: models/preprocess/
+  output_dir: ${data.features_dir}
+  audio_dir: data/audio/
+  features_to_process: ${active_features}
+
+  tfidf:
+    max_features: ${dimensions.text_bow}
+    ngram_range: [1, 2]
+    min_df: 3
+    
+  fasttext:
+    pretrained_path: ""
+    epoch: 5
+    lr: 0.025
+    dim: ${dimensions.text_embed}
+
+  audio_core:
+    target_sr: 22050
+
+  mfcc:
+    n_mfcc: 20
+
+  logmel:
+    n_mels: 128

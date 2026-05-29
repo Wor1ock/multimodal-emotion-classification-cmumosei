@@ -499,12 +499,6 @@ wheels = [
 ]
 
 [[package]]
-name = "hydra"
-version = "2.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6e/ac/7a7596cb752fe807be2f6fa11ed561e39efa86f556214733fc7df0e985d9/Hydra-2.5.tar.gz", hash = "sha256:247091b9c279c77686ea995f0f07070a28870c1942959b1474ad57076074384a", size = 82417, upload-time = "2016-08-03T13:21:51.329Z" }
-
-[[package]]
 name = "hydra-core"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -555,6 +549,35 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/41/f2/d34e8b3a08a9cc79a50b2208a93dce981fe615b64d5a4d4abee421d898df/joblib-1.5.3.tar.gz", hash = "sha256:8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3", size = 331603, upload-time = "2025-12-15T08:41:46.427Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl", hash = "sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713", size = 309071, upload-time = "2025-12-15T08:41:44.973Z" },
+]
+
+[[package]]
+name = "kagglehub"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "kagglesdk" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d9/3c/4d0cef65da767f2ec57a1c1c77e28d91378150652b69e6ceec99798709b5/kagglehub-1.0.1.tar.gz", hash = "sha256:eae33eba423de222cf3993d99f5b33c5ff25f33d9ee8efe64236b479462c3c54", size = 117354, upload-time = "2026-04-28T22:08:47.935Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/14/7b1f40778a4c8930f46b5841902647396069ccaa21cb8e0779ee822ffa77/kagglehub-1.0.1-py3-none-any.whl", hash = "sha256:003b7f725cbd64cc852a84fd840cf1e1594c2aa13d72f8090ed6e4e178a65166", size = 70636, upload-time = "2026-04-28T22:08:46.878Z" },
+]
+
+[[package]]
+name = "kagglesdk"
+version = "0.1.26"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "protobuf" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/c5/0f3e82c3d091ab998a43bcddd0fd919957a55aa4f40cf090759fce3a4333/kagglesdk-0.1.26.tar.gz", hash = "sha256:3c47cc09ad37ff623ad75fbe05edb078ec15745ca9f4825ab07990640ca26af2", size = 178577, upload-time = "2026-05-29T13:58:00.851Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/90/0af2cb7647972d380d31b46325c4eafee62ac8aa7d63e1db343506b420c1/kagglesdk-0.1.26-py3-none-any.whl", hash = "sha256:4690649cba5594a2b6ce9c4a0fa8e195ed4d7d602684a26e3adb43475179db25", size = 228801, upload-time = "2026-05-29T13:57:59.832Z" },
 ]
 
 [[package]]
@@ -662,6 +685,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/fb/76d88fc05ee1f9c1a6efe39eb493c4a727e5d1690412469017cd23bcb776/llvmlite-0.47.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:f9d118bc1dd7623e0e65ca9ac485ec6dd543c3b77bc9928ddc45ebd34e1e30a7", size = 56275179, upload-time = "2026-03-31T18:28:15.725Z" },
     { url = "https://files.pythonhosted.org/packages/4d/08/29da7f36217abd56a0c389ef9a18bea47960826e691ced1a36c92c6ce93c/llvmlite-0.47.0-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9ea5cfb04a6ab5b18e46be72b41b015975ba5980c4ddb41f1975b83e19031063", size = 55128632, upload-time = "2026-03-31T18:28:19.946Z" },
     { url = "https://files.pythonhosted.org/packages/df/f8/5e12e9ed447d65f04acf6fcf2d79cded2355640b5131a46cee4c99a5949d/llvmlite-0.47.0-cp310-cp310-win_amd64.whl", hash = "sha256:166b896a2262a2039d5fc52df5ee1659bd1ccd081183df7a2fba1b74702dd5ea", size = 38138402, upload-time = "2026-03-31T18:28:23.327Z" },
+]
+
+[[package]]
+name = "lmdb"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/44/d94934efaf8f887b6959f131fde740fcaa831edfd13eb5425574637cddd5/lmdb-2.2.0.tar.gz", hash = "sha256:53020e20305c043ea6e68089bc242d744fba6073cdb268332299ba6dda2886d4", size = 933189, upload-time = "2026-03-30T01:26:19.049Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fc/b2/d6f5249f8ce730fab15ef3f0ceed86ab401112ba5c768ba461ac6d7f66be/lmdb-2.2.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:41e6a5747d7b8777cc5b1226b57c2dea94023fb55bca5f798f46e50f31c8fd69", size = 112291, upload-time = "2026-03-30T01:25:33.766Z" },
+    { url = "https://files.pythonhosted.org/packages/02/ec/3154671ccff606bcde7ef33116c57e0a0cc49912fbf0449e117caa8579e7/lmdb-2.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:97c26c296a907a3990bf26fb7e13a332f58d91048b7c835feab43f9e9a5e9cd2", size = 111112, upload-time = "2026-03-30T01:25:34.953Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/30/3f9f357a58f0772663d480346d75ca152f6071121a25ec13d2994b461144/lmdb-2.2.0-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e86d3403a74d2b6f57459fa6bae07c5be97ad41be4baa102153f355125f058a0", size = 319004, upload-time = "2026-03-30T01:25:36.044Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/c5/1ec96f55496b232b9cde99cfebe3dbb41be4d48debd93f1aaadbe89936b3/lmdb-2.2.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:dab9b1b0376067ce42c9705065fd4197ddeaf63cda06e2a3988b16ab5a0e5991", size = 321401, upload-time = "2026-03-30T01:25:37.248Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/7e/a7f8e478b91e3238d7284d97991b683fefea9e1b3522a57ee5668576a3b5/lmdb-2.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:a07e1d58a2e1b4fceff7741adc1a41ed636ec6368a3201c465fa5709a212907a", size = 109758, upload-time = "2026-03-30T01:25:38.359Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/55/8c83540dfc77666668f65074336e74d3e409822f5ad7f5223c21edbf92ab/lmdb-2.2.0-cp310-cp310-win_arm64.whl", hash = "sha256:85ccaba7a254b1570395960037cc9a414249fca35674a582b92eac00fc879653", size = 103507, upload-time = "2026-03-30T01:25:39.733Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/05/a1831e9c3a312e57b694ada1574f17b3acd3b2753e92b4d06a8d942889c1/lmdb-2.2.0-pp310-pypy310_pp73-manylinux_2_38_x86_64.whl", hash = "sha256:a678e0ffcdc366a197b60e1f3e28e7c425031b35d5cbd73c0f08290ee7791ca6", size = 94857, upload-time = "2026-03-30T01:26:17.931Z" },
 ]
 
 [[package]]
@@ -803,11 +841,12 @@ source = { virtual = "." }
 dependencies = [
     { name = "en-core-web-sm" },
     { name = "fasttext" },
-    { name = "hydra" },
     { name = "hydra-core" },
     { name = "joblib" },
+    { name = "kagglehub" },
     { name = "librosa" },
     { name = "lightning" },
+    { name = "lmdb" },
     { name = "matplotlib" },
     { name = "nltk" },
     { name = "num2words" },
@@ -815,6 +854,7 @@ dependencies = [
     { name = "omegaconf" },
     { name = "pandas" },
     { name = "pytorch-lightning" },
+    { name = "resampy" },
     { name = "scikit-learn" },
     { name = "spacy" },
     { name = "tensorboard" },
@@ -831,11 +871,12 @@ dev = [
 requires-dist = [
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "fasttext" },
-    { name = "hydra" },
     { name = "hydra-core", specifier = ">=1.3.0" },
     { name = "joblib" },
+    { name = "kagglehub", specifier = ">=1.0.1" },
     { name = "librosa" },
     { name = "lightning", specifier = ">=2.4.0" },
+    { name = "lmdb", specifier = ">=2.2.0" },
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "nltk", specifier = ">=3.9.4" },
     { name = "num2words" },
@@ -843,6 +884,7 @@ requires-dist = [
     { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pytorch-lightning" },
+    { name = "resampy", specifier = ">=0.4.3" },
     { name = "scikit-learn", specifier = ">=1.3.0" },
     { name = "spacy", specifier = ">=3.8.14" },
     { name = "tensorboard", specifier = ">=2.14.0" },
@@ -1418,6 +1460,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
+]
+
+[[package]]
+name = "resampy"
+version = "0.4.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numba" },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/f1/34be702a69a5d272e844c98cee82351f880985cfbca0cc86378011078497/resampy-0.4.3.tar.gz", hash = "sha256:a0d1c28398f0e55994b739650afef4e3974115edbe96cd4bb81968425e916e47", size = 3080604, upload-time = "2024-03-05T20:36:08.119Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/b9/3b00ac340a1aab3389ebcc52c779914a44aadf7b0cb7a3bf053195735607/resampy-0.4.3-py3-none-any.whl", hash = "sha256:ad2ed64516b140a122d96704e32bc0f92b23f45419e8b8f478e5a05f83edcebd", size = 3076529, upload-time = "2024-03-05T20:36:02.439Z" },
 ]
 
 [[package]]

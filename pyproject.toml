@@ -16,13 +16,15 @@ dependencies = [
     "nltk>=3.9.4",
     "spacy>=3.8.14",
     "en-core-web-sm>=3.8.0",
-    "hydra",
     "joblib",
     "numpy",
     "fasttext",
     "num2words",
     "librosa",
     "pytorch-lightning",
+    "resampy>=0.4.3",
+    "kagglehub>=1.0.1",
+    "lmdb>=2.2.0",
 ]
 
 [dependency-groups]

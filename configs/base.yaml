@@ -1,0 +1,22 @@
+seed: 42
+
+dimensions:
+  text_bow: 300
+  text_embed: 768
+  audio_mfcc: 128
+  audio_logmel: 256
+
+active_features:
+  - text_bow
+  # - text_embed
+  # - audio_mfcc
+  # - audio_logmel
+
+data:
+  train_csv_path: data/train.csv
+  val_csv_path: data/val.csv
+  test_csv_path: data/test.csv
+  features_dir: data/features_cache
+  batch_size: 32
+  num_workers: 4
+  features_to_process: ${active_features}

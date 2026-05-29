@@ -1,0 +1,15 @@
+defaults:
+  - base
+  - _self_
+
+model:
+  _target_: src.models.baseline_mlp.MLPBaselineModel
+  num_classes: 6
+  lr: 0.001
+  hidden_dim: 256
+  dropout: 0.0
+  in_dim: ${dimensions.text_bow} 
+
+predict:
+  checkpoint_path: "models/last.ckpt"
+  output_path: "data/predictions.csv"

@@ -8,7 +8,7 @@ from src.dataset import MoseiDataModule
 from src.utils import set_seed
 
 
-@hydra.main(version_base=None, config_path=".", config_name="config")
+@hydra.main(version_base=None, config_path="configs", config_name="train")
 def train(cfg: DictConfig) -> None:
     set_seed(cfg.seed)
 
@@ -40,7 +40,7 @@ def train(cfg: DictConfig) -> None:
         accelerator="auto",
         devices=1,
         precision="16-mixed",
-        accumulate_grad_batches=cfg.trainer.gradient_accumulation_steps,
+        accumulate_grad_batches=4,
         logger=[
             CSVLogger(log_dir, name=cfg.logger.experiment_name),
             TensorBoardLogger(log_dir, name=cfg.logger.tensorboard_name),

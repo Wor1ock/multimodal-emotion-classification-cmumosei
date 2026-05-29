@@ -1,0 +1,21 @@
+defaults:
+  - base
+  - _self_
+
+model:
+  _target_: src.models.baseline_mlp.MLPBaselineModel
+  num_classes: 6
+  lr: 0.001
+  hidden_dim: 256
+  dropout: 0.3
+  in_dim: ${dimensions.text_bow} 
+
+trainer:
+  max_epochs: 50
+  patience: 5
+  checkpoint_dir: models
+  log_dir: logs
+
+logger:
+  experiment_name: csv_logs
+  tensorboard_name: tb

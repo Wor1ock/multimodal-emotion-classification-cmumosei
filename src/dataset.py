@@ -11,18 +11,29 @@ from src.utils import make_sample_id
 
 def _collate_fn(batch: list[dict]) -> dict:
     result = {}
-    keys = batch[0].keys()
+    first_item = batch[0]
+    keys = first_item.keys()
 
-    for key in keys:
-        values = [b[key] for b in batch]
+    for key in ("text", "video_id", "sample_id"):
+        if key in keys:
+            result[key] = [b[key] for b in batch]
 
-        if key == "labels":
-            result[key] = torch.stack(values)
-        elif key in ("text", "video_id", "sample_id"):
-            result[key] = values
+    if "labels" in keys:
+        result["labels"] = torch.stack([b["labels"] for b in batch])
+
+    feature_keys = [k for k in keys if k not in ("text", "video_id", "sample_id", "labels")]
+
+    if feature_keys:
+        active_key = feature_keys[0]
+        values = [b[active_key] for b in batch]
+
+        if values[0].ndim == 1:
+            result["x"] = torch.stack(values)
         else:
-            stacked = torch.stack(values)
-            result["x"] = stacked
+            from torch.nn.utils.rnn import pad_sequence
+
+            result["x"] = pad_sequence(values, batch_first=True, padding_value=0.0).float()
+            result["x_lengths"] = torch.tensor([v.size(0) for v in values], dtype=torch.long)
 
     return result
 
@@ -32,28 +43,41 @@ class MoseiDataset(Dataset):
         self,
         df: pd.DataFrame,
         features_to_load: list[str],
-        split_dir: Path | None = None,
+        split_dir: Path,
     ):
         self.df = df.reset_index(drop=True)
         self.features_to_load = features_to_load
         self.split_dir = split_dir
         self.target_cols = ["happy", "sad", "anger", "surprise", "disgust", "fear"]
-        self._sample_ids = [make_sample_id(row) for _, row in self.df.iterrows()]
+
+        self._sample_ids = self.df.apply(make_sample_id, axis=1).tolist()
 
     def __len__(self) -> int:
         return len(self.df)
 
     def _load_feature(self, sample_id: str, key: str) -> torch.Tensor:
-        return torch.load(self.split_dir / key / f"{sample_id}.pt")
+        path = self.split_dir / key / f"{sample_id}.pt"
+
+        if not path.exists():
+            if key == "text_bow":
+                return torch.zeros(300, dtype=torch.float32)
+            if key == "text_embed":
+                return torch.zeros(768, dtype=torch.float32)
+            if key == "audio_mfcc":
+                return torch.zeros(1, 128, dtype=torch.float32)
+            if key == "audio_logmel":
+                return torch.zeros(1, 256, dtype=torch.float32)
+            return torch.zeros(1, dtype=torch.float32)
+
+        return torch.load(path).float()
 
     def __getitem__(self, idx: int) -> dict:
         row = self.df.iloc[idx]
         sample_id = self._sample_ids[idx]
 
-        labels = torch.tensor(
-            row[self.target_cols].values.astype(np.float32),
-            dtype=torch.float32,
-        )
+        raw_values = row[self.target_cols].values.astype(np.float32)
+        binary_values = (raw_values > 0.0).astype(np.float32)
+        labels = torch.tensor(binary_values, dtype=torch.float32)
 
         sample = {
             "text": str(row["text"]),

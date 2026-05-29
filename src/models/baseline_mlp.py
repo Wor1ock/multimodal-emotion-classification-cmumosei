@@ -32,7 +32,8 @@ class MLPBaselineModel(L.LightningModule):
             nn.Linear(hidden_dim, num_classes),
         )
 
-        self.f1_metric = MultilabelF1Score(num_labels=num_classes, average="macro")
+        self.train_f1 = MultilabelF1Score(num_labels=num_classes, average="macro")
+        self.val_f1 = MultilabelF1Score(num_labels=num_classes, average="macro")
 
     def forward(self, x: Tensor) -> Tensor:
         if x.dim() == 3:
@@ -45,12 +46,14 @@ class MLPBaselineModel(L.LightningModule):
         logits = self(x)
         loss = self.loss_fn(logits, y.float())
 
-        preds = (torch.sigmoid(logits) > 0.5).long()
-        self.f1_metric(preds, y.long())
+        self.train_f1.update(logits, y.long())
 
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train_f1", self.f1_metric, on_step=False, on_epoch=True, prog_bar=True)
         return loss
+
+    def on_train_epoch_end(self) -> None:
+        self.log("train_f1", self.train_f1.compute(), prog_bar=True)
+        self.train_f1.reset()
 
     def validation_step(self, batch: dict[str, Tensor], _batch_idx: int) -> Tensor:
         x, y = batch["x"], batch["labels"]
@@ -58,12 +61,21 @@ class MLPBaselineModel(L.LightningModule):
         logits = self(x)
         loss = self.loss_fn(logits, y.float())
 
-        preds = (torch.sigmoid(logits) > 0.5).long()
-        self.f1_metric(preds, y.long())
+        self.val_f1.update(logits, y.long())
 
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val_f1", self.f1_metric, on_step=False, on_epoch=True, prog_bar=True)
         return loss
+
+    def on_validation_epoch_end(self) -> None:
+        if self.val_f1.tp is not None:
+            self.log("val_f1", self.val_f1.compute(), prog_bar=True)
+        self.val_f1.reset()
+
+    def predict_step(self, batch: dict[str, torch.Tensor], _batch_idx: int) -> dict:
+        x = batch["x"]
+        logits = self(x)
+
+        return {"logits": logits, "sample_id": batch["sample_id"], "text": batch["text"]}
 
     def configure_optimizers(self) -> AdamW:
         return AdamW(self.parameters(), lr=self.learning_rate)
