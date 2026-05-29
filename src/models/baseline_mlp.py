@@ -1,4 +1,3 @@
-from typing import Any, Dict
 import lightning as L
 import torch
 import torch.nn as nn
@@ -33,43 +32,37 @@ class MLPBaselineModel(L.LightningModule):
             nn.Linear(hidden_dim, num_classes),
         )
 
-        self.f1_metric = MultilabelF1Score(
-            num_labels=num_classes,
-            average="macro"
-        )
+        self.f1_metric = MultilabelF1Score(num_labels=num_classes, average="macro")
 
     def forward(self, x: Tensor) -> Tensor:
         if x.dim() == 3:
             x = x.mean(dim=1)
         return self.model(x)
 
-    def training_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
+    def training_step(self, batch: dict[str, Tensor], _batch_idx: int) -> Tensor:
         x, y = batch["x"], batch["labels"]
 
         logits = self(x)
         loss = self.loss_fn(logits, y.float())
 
-        preds = torch.sigmoid(logits)
+        preds = (torch.sigmoid(logits) > 0.5).long()
         self.f1_metric(preds, y.long())
 
-        self.log("train_loss", loss, on_step=False,
-                 on_epoch=True, prog_bar=True)
-        self.log("train_f1", self.f1_metric, on_step=False,
-                 on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_f1", self.f1_metric, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
-    def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
+    def validation_step(self, batch: dict[str, Tensor], _batch_idx: int) -> Tensor:
         x, y = batch["x"], batch["labels"]
 
         logits = self(x)
         loss = self.loss_fn(logits, y.float())
 
-        preds = torch.sigmoid(logits)
+        preds = (torch.sigmoid(logits) > 0.5).long()
         self.f1_metric(preds, y.long())
 
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val_f1", self.f1_metric, on_step=False,
-                 on_epoch=True, prog_bar=True)
+        self.log("val_f1", self.f1_metric, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def configure_optimizers(self) -> AdamW:

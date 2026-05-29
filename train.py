@@ -13,7 +13,6 @@ def train(cfg: DictConfig) -> None:
     set_seed(cfg.seed)
 
     dm = MoseiDataModule(
-        seed=cfg.seed,
         **cfg.data,
     )
 

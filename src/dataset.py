@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 import lightning as L
 import numpy as np
@@ -10,20 +9,36 @@ from torch.utils.data import DataLoader, Dataset
 from src.utils import make_sample_id
 
 
+def _collate_fn(batch: list[dict]) -> dict:
+    result = {}
+    keys = batch[0].keys()
+
+    for key in keys:
+        values = [b[key] for b in batch]
+
+        if key == "labels":
+            result[key] = torch.stack(values)
+        elif key in ("text", "video_id", "sample_id"):
+            result[key] = values
+        else:
+            stacked = torch.stack(values)
+            result["x"] = stacked
+
+    return result
+
+
 class MoseiDataset(Dataset):
     def __init__(
         self,
         df: pd.DataFrame,
-        features_to_load: List[str],
+        features_to_load: list[str],
         split_dir: Path | None = None,
     ):
         self.df = df.reset_index(drop=True)
         self.features_to_load = features_to_load
         self.split_dir = split_dir
-        self.target_cols = ["happy", "sad",
-                            "anger", "surprise", "disgust", "fear"]
-        self._sample_ids = [make_sample_id(row)
-                            for _, row in self.df.iterrows()]
+        self.target_cols = ["happy", "sad", "anger", "surprise", "disgust", "fear"]
+        self._sample_ids = [make_sample_id(row) for _, row in self.df.iterrows()]
 
     def __len__(self) -> int:
         return len(self.df)
@@ -60,10 +75,10 @@ class MoseiDataModule(L.LightningDataModule):
         val_csv_path: str,
         test_csv_path: str,
         features_dir: str,
-        features_to_process: List[str],
+        features_to_process: list[str],
         batch_size: int,
         num_workers: int,
-        **kwargs,
+        **_kwargs,
     ):
         super().__init__()
         self.csv_paths = {
@@ -101,6 +116,7 @@ class MoseiDataModule(L.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
             persistent_workers=self.num_workers > 0,
+            collate_fn=_collate_fn,
         )
 
     def train_dataloader(self) -> DataLoader:
